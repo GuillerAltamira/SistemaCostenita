@@ -1,0 +1,24 @@
+@startuml HU06_Casos_Uso
+
+left to right direction
+
+actor "Responsable de Costeñita" as Responsable
+
+rectangle "Sistema de Gestión Costeñita" {
+
+    usecase "Registrar entrada de producto" as UC_Entrada
+    usecase "Validar cantidad" as UC_Validar
+    usecase "Verificar producto" as UC_Producto
+    usecase "Actualizar stock" as UC_Stock
+    usecase "Mostrar error de validación" as UC_Error
+}
+
+Responsable --> UC_Entrada
+
+UC_Entrada .> UC_Validar : <<include>>
+UC_Entrada .> UC_Producto : <<include>>
+UC_Entrada .> UC_Stock : <<include>>
+
+UC_Error .> UC_Entrada : <<extend>>
+
+@enduml

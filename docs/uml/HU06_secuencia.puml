@@ -1,0 +1,35 @@
+@startuml HU06_Secuencia
+
+actor "Responsable de Costeñita" as Responsable
+boundary "Interfaz de Inventario" as UI
+control "InventarioController" as Controller
+database "Base de Datos" as DB
+
+Responsable -> UI : ingresarEntrada(producto, cantidad, fecha)
+UI -> Controller : registrarEntrada(producto, cantidad, fecha)
+
+Controller -> Controller : validarCantidad()
+
+alt Cantidad válida
+
+    Controller -> DB : verificarProducto(producto)
+    DB --> Controller : productoExiste
+
+    alt Producto existe
+        Controller -> DB : actualizarStock(producto, cantidad)
+        DB --> Controller : stockActualizado
+
+        Controller -> UI : mostrarConfirmacion()
+        UI --> Responsable : "Entrada registrada correctamente"
+
+    else Producto no existe
+        Controller -> UI : mostrarErrorProducto()
+        UI --> Responsable : "Producto no encontrado"
+    end
+
+else Cantidad inválida
+    Controller -> UI : mostrarErrorValidacion()
+    UI --> Responsable : "La cantidad debe ser mayor que cero"
+end
+
+@enduml
