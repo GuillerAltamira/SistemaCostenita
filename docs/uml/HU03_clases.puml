@@ -1,0 +1,30 @@
+@startuml HU03_Clases
+
+class Proveedor {
+    - idProveedor : int
+    - nombre : String
+    - telefono : String
+    - localidad : String
+
+    + registrarProveedor() : void
+    + validarDatosProveedor() : boolean
+    + verificarProveedorDuplicado() : boolean
+    + guardarProveedor() : void
+}
+
+class ProveedorController {
+    + registrarProveedor(nombre : String, telefono : String, localidad : String) : void
+    + validarDatosProveedor() : boolean
+    + verificarProveedorDuplicado() : boolean
+    + guardarProveedor() : void
+}
+
+class ProveedorRepository {
+    + verificarProveedorDuplicado(nombre : String, telefono : String) : boolean
+    + guardarProveedor(proveedor : Proveedor) : void
+}
+
+ProveedorController --> Proveedor
+ProveedorController --> ProveedorRepository
+
+@enduml

@@ -1,0 +1,24 @@
+@startuml HU03_Casos_Uso
+
+left to right direction
+
+actor "Responsable de Costeñita" as Responsable
+
+rectangle "Sistema de Gestión Costeñita" {
+
+    usecase "Registrar proveedor" as UC_Registrar
+    usecase "Validar datos del proveedor" as UC_Validar
+    usecase "Verificar proveedor duplicado" as UC_Verificar
+    usecase "Guardar proveedor" as UC_Guardar
+    usecase "Mostrar error por proveedor duplicado" as UC_Error
+}
+
+Responsable --> UC_Registrar
+
+UC_Registrar .> UC_Validar : <<include>>
+UC_Registrar .> UC_Verificar : <<include>>
+UC_Registrar .> UC_Guardar : <<include>>
+
+UC_Error .> UC_Registrar : <<extend>>
+
+@enduml

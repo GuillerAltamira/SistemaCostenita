@@ -1,0 +1,32 @@
+@startuml HU03_Secuencia
+
+actor "Responsable de Costeñita" as Responsable
+boundary "Interfaz de Proveedores" as UI
+control "ProveedorController" as Controller
+database "Base de Datos" as DB
+
+Responsable -> UI : ingresarDatosProveedor(nombre, telefono, localidad)
+UI -> Controller : registrarProveedor(nombre, telefono, localidad)
+
+Controller -> Controller : validarDatosProveedor()
+
+alt Datos válidos
+    Controller -> DB : verificarProveedorDuplicado(nombre, telefono)
+    DB --> Controller : resultadoVerificacion
+
+    alt Proveedor no existe
+        Controller -> DB : guardarProveedor(nombre, telefono, localidad)
+        DB --> Controller : proveedorGuardado
+        Controller -> UI : mostrarConfirmacion()
+        UI --> Responsable : "Proveedor registrado correctamente"
+    else Proveedor duplicado
+        Controller -> UI : mostrarErrorDuplicado()
+        UI --> Responsable : "El proveedor ya existe"
+    end
+
+else Datos inválidos
+    Controller -> UI : mostrarErrorValidacion()
+    UI --> Responsable : "Complete los datos obligatorios"
+end
+
+@enduml
