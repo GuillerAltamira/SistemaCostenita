@@ -1,0 +1,42 @@
+@startuml HU04_Secuencia
+
+actor "Responsable de Costeñita" as Responsable
+boundary "Interfaz de Compras" as UI
+control "CompraController" as Controller
+database "Base de Datos" as DB
+control "InventarioController" as Inventario
+
+Responsable -> UI : ingresarDatosCompra(proveedor, producto, cantidad, fecha)
+UI -> Controller : registrarCompra(proveedor, producto, cantidad, fecha)
+
+Controller -> Controller : validarDatosCompra()
+
+alt Datos válidos
+
+    Controller -> DB : verificarProveedor(proveedor)
+    DB --> Controller : proveedorExiste
+
+    alt Proveedor válido
+
+        Controller -> DB : guardarCompra(compra)
+        DB --> Controller : compraGuardada
+
+        Controller -> Inventario : registrarEntrada(producto, cantidad)
+        Inventario -> DB : actualizarStock(producto, cantidad)
+        DB --> Inventario : stockActualizado
+        Inventario --> Controller : entradaRegistrada
+
+        Controller -> UI : mostrarConfirmacion()
+        UI --> Responsable : "Compra registrada correctamente"
+
+    else Proveedor no válido
+        Controller -> UI : mostrarErrorProveedor()
+        UI --> Responsable : "Proveedor no encontrado"
+    end
+
+else Datos inválidos
+    Controller -> UI : mostrarErrorValidacion()
+    UI --> Responsable : "Verifique los datos de la compra"
+end
+
+@enduml

@@ -1,0 +1,46 @@
+@startuml HU04_Clases
+
+class Compra {
+    - idCompra : int
+    - fecha : Date
+    - cantidad : decimal
+    - unidadMedida : String
+    - estado : String
+
+    + registrarCompra() : void
+    + validarDatosCompra() : boolean
+    + verificarProveedor() : boolean
+    + guardarCompra() : void
+}
+
+class Proveedor {
+    - idProveedor : int
+    - nombre : String
+    - telefono : String
+    - localidad : String
+}
+
+class Producto {
+    - idProducto : int
+    - nombre : String
+    - presentacion : String
+}
+
+class CompraController {
+    + registrarCompra(proveedor : int, producto : int, cantidad : decimal, fecha : Date) : void
+    + validarDatosCompra() : boolean
+    + verificarProveedor() : boolean
+    + guardarCompra() : void
+}
+
+class InventarioController {
+    + registrarEntrada(producto : int, cantidad : decimal) : void
+    + actualizarStock(producto : int, cantidad : decimal) : void
+}
+
+Compra "0..*" --> "1" Proveedor
+Compra "0..*" --> "1" Producto
+CompraController --> Compra
+CompraController --> InventarioController
+
+@enduml

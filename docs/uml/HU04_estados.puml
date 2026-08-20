@@ -1,0 +1,14 @@
+@startuml HU04_Estados
+
+[*] --> Pendiente : Registrar compra
+
+Pendiente --> Validada : Datos correctos
+Pendiente --> Rechazada : Datos inválidos
+
+Validada --> Registrada : Guardar compra
+Registrada --> InventarioActualizado : Actualizar inventario
+
+Rechazada --> [*]
+InventarioActualizado --> [*]
+
+@enduml

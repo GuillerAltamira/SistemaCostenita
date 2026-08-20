@@ -1,0 +1,26 @@
+@startuml HU04_Casos_Uso
+
+left to right direction
+
+actor "Responsable de Costeñita" as Responsable
+
+rectangle "Sistema de Gestión Costeñita" {
+
+    usecase "Registrar compra de miel" as UC_Registrar
+    usecase "Validar datos de compra" as UC_Validar
+    usecase "Verificar proveedor" as UC_Proveedor
+    usecase "Guardar compra" as UC_Guardar
+    usecase "Actualizar inventario" as UC_Inventario
+    usecase "Mostrar error de validación" as UC_Error
+}
+
+Responsable --> UC_Registrar
+
+UC_Registrar .> UC_Validar : <<include>>
+UC_Registrar .> UC_Proveedor : <<include>>
+UC_Registrar .> UC_Guardar : <<include>>
+UC_Registrar .> UC_Inventario : <<include>>
+
+UC_Error .> UC_Registrar : <<extend>>
+
+@enduml
