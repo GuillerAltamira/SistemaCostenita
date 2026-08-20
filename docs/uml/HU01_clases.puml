@@ -1,0 +1,30 @@
+@startuml HU01_Clases
+
+class Producto {
+    - idProducto : int
+    - nombre : String
+    - presentacion : String
+    - estado : String
+
+    + registrarProducto() : void
+    + validarDatosProducto() : boolean
+    + verificarProductoDuplicado() : boolean
+    + guardarProducto() : void
+}
+
+class ProductoController {
+    + registrarProducto(nombre : String, presentacion : String) : void
+    + validarDatosProducto() : boolean
+    + verificarProductoDuplicado() : boolean
+    + guardarProducto() : void
+}
+
+class ProductoRepository {
+    + verificarProductoDuplicado(nombre : String, presentacion : String) : boolean
+    + guardarProducto(producto : Producto) : void
+}
+
+ProductoController --> Producto
+ProductoController --> ProductoRepository
+
+@enduml

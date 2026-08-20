@@ -1,0 +1,32 @@
+@startuml HU01_Secuencia
+
+actor "Responsable de Costeñita" as Responsable
+boundary "Interfaz de Productos" as UI
+control "ProductoController" as Controller
+database "Base de Datos" as DB
+
+Responsable -> UI : ingresarDatosProducto(nombre, presentacion)
+UI -> Controller : registrarProducto(nombre, presentacion)
+
+Controller -> Controller : validarDatosProducto()
+
+alt Datos válidos
+    Controller -> DB : verificarProductoDuplicado(nombre, presentacion)
+    DB --> Controller : resultadoVerificacion
+
+    alt Producto no existe
+        Controller -> DB : guardarProducto(nombre, presentacion)
+        DB --> Controller : productoGuardado
+        Controller --> UI : mostrarConfirmacion()
+        UI --> Responsable : "Producto registrado correctamente"
+    else Producto duplicado
+        Controller -> UI : mostrarErrorDuplicado()
+        UI --> Responsable : "El producto ya existe"
+    end
+
+else Datos inválidos
+    Controller -> UI : mostrarErrorValidacion()
+    UI --> Responsable : "Complete los campos obligatorios"
+end
+
+@enduml
