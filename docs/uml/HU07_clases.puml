@@ -1,0 +1,37 @@
+@startuml HU07_Clases
+
+class Producto {
+    - idProducto : int
+    - nombre : String
+    - presentacion : String
+}
+
+class MovimientoInventario {
+    - idMovimiento : int
+    - tipo : String
+    - cantidad : decimal
+    - fecha : Date
+
+    + registrarSalida() : void
+    + validarCantidad() : boolean
+    + verificarStockDisponible() : boolean
+    + actualizarInventario() : void
+}
+
+class InventarioController {
+    + registrarSalida(producto : int, cantidad : decimal, fecha : Date) : void
+    + validarCantidad() : boolean
+    + verificarStockDisponible(producto : int, cantidad : decimal) : boolean
+    + actualizarInventario(producto : int, cantidad : decimal) : void
+}
+
+class InventarioRepository {
+    + consultarStock(producto : int) : decimal
+    + actualizarStock(producto : int, cantidad : decimal) : void
+}
+
+MovimientoInventario "0..*" --> "1" Producto
+InventarioController --> MovimientoInventario
+InventarioController --> InventarioRepository
+
+@enduml

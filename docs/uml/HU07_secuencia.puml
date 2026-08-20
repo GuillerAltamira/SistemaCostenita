@@ -1,0 +1,35 @@
+@startuml HU07_Secuencia
+
+actor "Responsable de Costeñita" as Responsable
+boundary "Interfaz de Inventario" as UI
+control "InventarioController" as Controller
+database "Base de Datos" as DB
+
+Responsable -> UI : ingresarSalida(producto, cantidad, fecha)
+UI -> Controller : registrarSalida(producto, cantidad, fecha)
+
+Controller -> Controller : validarCantidad()
+
+alt Cantidad válida
+
+    Controller -> DB : consultarStock(producto)
+    DB --> Controller : stockDisponible
+
+    alt Stock suficiente
+        Controller -> DB : actualizarStock(producto, -cantidad)
+        DB --> Controller : stockActualizado
+
+        Controller -> UI : mostrarConfirmacion()
+        UI --> Responsable : "Salida registrada correctamente"
+
+    else Stock insuficiente
+        Controller -> UI : mostrarErrorStock()
+        UI --> Responsable : "Stock insuficiente"
+    end
+
+else Cantidad inválida
+    Controller -> UI : mostrarErrorValidacion()
+    UI --> Responsable : "La cantidad debe ser mayor que cero"
+end
+
+@enduml
