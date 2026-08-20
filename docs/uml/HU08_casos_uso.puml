@@ -1,0 +1,24 @@
+@startuml HU08_Casos_Uso
+
+left to right direction
+
+actor "Responsable de Costeñita" as Responsable
+
+rectangle "Sistema de Gestión Costeñita" {
+
+    usecase "Consultar inventario" as UC_Consultar
+    usecase "Buscar producto" as UC_Buscar
+    usecase "Consultar stock" as UC_Stock
+    usecase "Mostrar existencias" as UC_Mostrar
+    usecase "Mostrar producto no encontrado" as UC_Error
+}
+
+Responsable --> UC_Consultar
+
+UC_Consultar .> UC_Buscar : <<include>>
+UC_Consultar .> UC_Stock : <<include>>
+UC_Consultar .> UC_Mostrar : <<include>>
+
+UC_Error .> UC_Consultar : <<extend>>
+
+@enduml

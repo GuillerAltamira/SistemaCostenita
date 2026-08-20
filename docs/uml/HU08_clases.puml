@@ -1,0 +1,36 @@
+@startuml HU08_Clases
+
+class Producto {
+    - idProducto : int
+    - nombre : String
+    - presentacion : String
+}
+
+class Inventario {
+    - idInventario : int
+    - stockActual : decimal
+    - unidadMedida : String
+
+    + consultarInventario() : List
+    + buscarProducto() : Producto
+    + consultarStock() : decimal
+    + mostrarExistencias() : List
+}
+
+class InventarioController {
+    + consultarInventario() : List
+    + buscarProducto(idProducto : int) : Producto
+    + consultarStock(idProducto : int) : decimal
+    + mostrarExistencias() : List
+}
+
+class InventarioRepository {
+    + obtenerExistencias() : List
+    + consultarStock(idProducto : int) : decimal
+}
+
+Inventario "1" --> "1..*" Producto
+InventarioController --> Inventario
+InventarioController --> InventarioRepository
+
+@enduml

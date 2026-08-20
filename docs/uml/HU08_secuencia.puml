@@ -1,0 +1,23 @@
+@startuml HU08_Secuencia
+
+actor "Responsable de Costeñita" as Responsable
+boundary "Interfaz de Inventario" as UI
+control "InventarioController" as Controller
+database "Base de Datos" as DB
+
+Responsable -> UI : solicitarInventario()
+UI -> Controller : consultarInventario()
+
+Controller -> DB : obtenerExistencias()
+DB --> Controller : listaInventario
+
+alt Existen productos
+    Controller -> UI : mostrarInventario(listaInventario)
+    UI --> Responsable : Mostrar productos y stock
+
+else Inventario vacío
+    Controller -> UI : mostrarInventarioVacio()
+    UI --> Responsable : "No existen productos registrados"
+end
+
+@enduml
