@@ -98,7 +98,7 @@ RESTRICCIONES:
 - id_compra: PK, autoincremental, NOT NULL, UNIQUE.
 - fecha: obligatoria.
 - cantidad: obligatoria y debe ser mayor que cero.
-- unidad_medida: KG o LITRO.
+- unidad_medida: GRAMOS, KG o UNIDAD (Gestión por Peso).
 - estado: REGISTRADA o ANULADA.
 - id_proveedor: FK obligatoria.
 - id_producto: FK obligatoria.
@@ -121,7 +121,7 @@ NORMALIZACION:
 RESTRICCIONES:
 - id_inventario: PK, autoincremental, NOT NULL, UNIQUE.
 - stock_actual: obligatorio y no puede ser negativo.
-- unidad_medida: UNIDAD, KG o LITRO.
+- unidad_medida: GRAMOS, KG o UNIDAD (Gestión por Peso).
 - id_producto: FK obligatoria y UNIQUE.
 ',
 @level0type = N'Schema', @level0name = 'dbo',

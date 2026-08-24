@@ -22,17 +22,18 @@ cuadernos a una plataforma digital que centralice compras, productos, inventario
 - Base de Datos: Motor SQL Relacional Normalizado en 3FN (PostgreSQL / MySQL)
 
 ### 3. Modelo de Datos Normalizado (5 Tablas)
-- PRODUCTO (id_producto PK, nombre, presentacion, estado)
+- PRODUCTO (id_producto PK, nombre, presentacion, estado) — *Presentaciones expresadas en peso (ej. 250 g, 500 g, 1 kg, Balde 25 kg)*
 - PROVEEDOR (id_proveedor PK, nombre, telefono UNIQUE, localidad)
-- COMPRA (id_compra PK, fecha, cantidad, unidad_medida, estado, id_proveedor FK, id_producto FK)
-- INVENTARIO (id_inventario PK, stock_actual, unidad_medida, id_producto FK UNIQUE)
-- MOVIMIENTO_INVENTARIO (id_movimiento PK, tipo, cantidad, fecha, id_producto FK)
+- COMPRA (id_compra PK, fecha, cantidad, unidad_medida, estado, id_proveedor FK, id_producto FK) — *Unidades permitidas: ('GRAMOS', 'KG', 'UNIDAD')*
+- INVENTARIO (id_inventario PK, stock_actual, unidad_medida, id_producto FK UNIQUE) — *Unidades permitidas: ('GRAMOS', 'KG', 'UNIDAD')*
+- MOVIMIENTO_INVENTARIO (id_movimiento PK, tipo, cantidad, unidad_medida, fecha, id_producto FK) — *Unidades permitidas: ('GRAMOS', 'KG', 'UNIDAD')*
+*Nota técnica:* La miel y sus derivados se gestionan exclusivamente por peso, no por volumen.
 
 ### 4. Marco Legal Boliviano Citado
 - Ley N° 830 (SENASAG): Inocuidad y trazabilidad obligatoria de apicultores en Villa Montes.
-- Normas IBNORCA (NB 38001/2/4): Estándares de calidad y unidades de envasado (Kg, Litro).
+- Normas IBNORCA (NB 38001/2/4): Estándares de calidad y unidades de envasado estandarizadas por peso (Gramos y Kilogramos).
 - Código de Comercio (Decreto Ley N° 14379, Art. 36-65): Obligación de registro mercantil e inventarios inalterables.
-- Ley N° 453: Información exacta al consumidor y veracidad en presentaciones.
+- Ley N° 453: Información exacta al consumidor y veracidad en presentaciones en masa/peso neto.
 - Ley N° 164: Validez legal de registros y datos informáticos.
 
 ### 5. Backlog MVP (Semana 1 & 2)
