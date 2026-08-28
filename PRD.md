@@ -59,4 +59,4 @@ cuadernos a una plataforma digital que centralice compras, productos, inventario
 * **Protección contra Acceso Indebido (Código Penal Art. 363 ter):** Se implementa autenticación robusta mediante Supabase Auth y políticas de seguridad a nivel de fila (Row Level Security - RLS).
 * **Logs de Auditoría Inalterables:** Registro automático en la tabla `logs_auditoria` para todas las operaciones DML (`INSERT`, `UPDATE`, `DELETE`), almacenando `usuario`, `accion`, `tabla_afectada`, `datos_anteriores`, `datos_nuevos` y `timestamp`.
 * **Cifrado de Datos en Reposo y en Tránsito:** Tránsito forzado por HTTPS/TLS 1.3 y uso de funciones criptográficas (extensión `pgcrypto`) para números de teléfono, documentos de identidad (CI/NIT) y credenciales.
-*
+
