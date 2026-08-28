@@ -56,7 +56,6 @@ cuadernos a una plataforma digital que centralice compras, productos, inventario
 * **Validez de Transacciones y Documentos Digitales:** La trazabilidad de transacciones de compra y venta queda registrada con identificador de sesión y marcas temporales auditables, preparando la integración con firma digital según el Art. 78 de la Ley 164.
 
 ### 6.3. Seguridad de la Información, Código Penal y Directrices Financieras (ASFI / Art. 363 ter)
-* **Protección contra Acceso Indebido (Código Penal Art. 363 ter):** Se implementa autenticación robusta mediante Supabase Auth y políticas de seguridad a nivel de fila (Row Level Security - RLS).
-* **Logs de Auditoría Inalterables:** Registro automático en la tabla `logs_auditoria` para todas las operaciones DML (`INSERT`, `UPDATE`, `DELETE`), almacenando `usuario`, `accion`, `tabla_afectada`, `datos_anteriores`, `datos_nuevos` y `timestamp`.
-* **Cifrado de Datos en Reposo y en Tránsito:** Tránsito forzado por HTTPS/TLS 1.3 y uso de funciones criptográficas (extensión `pgcrypto`) para números de teléfono, documentos de identidad (CI/NIT) y credenciales.
-
+* **Protección contra Acceso Indebido (Código Penal Art. 363 ter):** Se implementa autenticación mediante Supabase Auth y políticas de seguridad a nivel de fila (Row Level Security - RLS) para restringir accesos anónimos indebidos.
+* **Logs de Auditoría Inalterables Encadenados (Normativa ASFI Libro 3° Tít. VII / Ley 164 Art. 79):** Registro automático en la tabla `logs_auditoria` para todas las operaciones DML (`INSERT`, `UPDATE`, `DELETE`), almacenando `tabla_afectada`, `operacion`, `usuario_id`, `datos_anteriores`, `datos_nuevos`, `hash_anterior`, `hash_integridad` (SHA-256) y `timestamp`. La modificación o eliminación de logs está físicamente denegada por triggers de base de datos (`trg_bloquear_alteracion_auditoria`).
+* **Cifrado de Datos en Reposo y en Tránsito:** Tránsito cifrado TLS 1.3 y cifrado simétrico en reposo mediante la extensión `pgcrypto` (`fn_cifrar_texto` / `fn_descifrar_texto`) para resguardar números de teléfono y datos personales de apicultores (PII).

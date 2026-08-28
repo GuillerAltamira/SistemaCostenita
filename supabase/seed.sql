@@ -3,13 +3,13 @@
 -- Microempresa Apícola Costeñita — Villa Montes, Tarija, Bolivia
 -- ==============================================================================
 
--- 1. Insertar Proveedores / Apicultores de la región Chaqueña
+-- 1. Insertar Proveedores / Apicultores de la región Chaqueña con teléfonos cifrados
 INSERT INTO proveedor (nombre, telefono, localidad) VALUES
-('Don Mateo Benítez (Apicultor El Palmar)', '72981234', 'El Palmar - Villa Montes'),
-('Asociación de Apicultores Pilcomayo (ASOAPI)', '71894562', 'Ibibobo - Gran Chaco'),
-('Doña Carmen Baldiviezo (Finca La Floresta)', '76123984', 'Tarairí - Villa Montes'),
-('Sr. Victoriano Ramos', '73456789', 'Caigua - Villa Montes'),
-('Cooperativa Apícola Chaqueña Ltda.', '75128493', 'Puesto Uno - Villa Montes')
+('Don Mateo Benítez (Apicultor El Palmar)', fn_cifrar_texto('72981234'), 'El Palmar - Villa Montes'),
+('Asociación de Apicultores Pilcomayo (ASOAPI)', fn_cifrar_texto('71894562'), 'Ibibobo - Gran Chaco'),
+('Doña Carmen Baldiviezo (Finca La Floresta)', fn_cifrar_texto('76123984'), 'Tarairí - Villa Montes'),
+('Sr. Victoriano Ramos', fn_cifrar_texto('73456789'), 'Caigua - Villa Montes'),
+('Cooperativa Apícola Chaqueña Ltda.', fn_cifrar_texto('75128493'), 'Puesto Uno - Villa Montes')
 ON CONFLICT (telefono) DO NOTHING;
 
 -- 2. Insertar Productos de Miel y Derivados (Expresados estrictamente en Peso: Gramos y Kilos)

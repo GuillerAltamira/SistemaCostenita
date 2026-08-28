@@ -147,3 +147,18 @@ export interface DashboardMetrics {
   ventasMesTotal: number;
   alertasStockBajo: number;
 }
+
+/**
+ * Entidad LOGS_AUDITORIA (Inalterable - ASFI & Ley 164)
+ */
+export interface LogAuditoria {
+  id_log: number;
+  tabla_afectada: string;
+  operacion: 'INSERT' | 'UPDATE' | 'DELETE' | 'SELECT';
+  usuario_id?: string;
+  datos_anteriores?: Record<string, unknown>;
+  datos_nuevos?: Record<string, unknown>;
+  hash_anterior?: string;
+  hash_integridad: string;
+  created_at?: string;
+}
