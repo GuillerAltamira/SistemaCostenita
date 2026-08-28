@@ -44,3 +44,19 @@ cuadernos a una plataforma digital que centralice compras, productos, inventario
 - HU07: Registrar Salida de Producto (Validación de Stock)
 - HU08: Consultar Inventario
 - HU09: Registrar Venta
+
+## 6. Marco Legal y Ética de Datos
+
+### 6.1. Derecho al Habeas Data (CPE Art. 130)
+* **Acceso y Rectificación:** Los usuarios (responsables, apicultores y clientes) tienen derecho a visualizar y modificar la exactitud de sus datos de contacto y transacciones registradas.
+* **Supresión / Anonimización:** Se implementa borrado lógico (`is_deleted = true`) y disociación de datos sensibles (anonimización de teléfonos y nombres) cuando se requiere la baja, garantizando la preservación de históricos contables.
+
+### 6.2. Cumplimiento de la Ley General de Telecomunicaciones y TIC (Ley N° 164)
+* **Estándares Abiertos:** El sistema utiliza esquemas de intercambio e interfaces basadas en formatos abiertos (JSON, PostgreSQL, REST) garantizando interoperabilidad tecnológica.
+* **Validez de Transacciones y Documentos Digitales:** La trazabilidad de transacciones de compra y venta queda registrada con identificador de sesión y marcas temporales auditables, preparando la integración con firma digital según el Art. 78 de la Ley 164.
+
+### 6.3. Seguridad de la Información, Código Penal y Directrices Financieras (ASFI / Art. 363 ter)
+* **Protección contra Acceso Indebido (Código Penal Art. 363 ter):** Se implementa autenticación robusta mediante Supabase Auth y políticas de seguridad a nivel de fila (Row Level Security - RLS).
+* **Logs de Auditoría Inalterables:** Registro automático en la tabla `logs_auditoria` para todas las operaciones DML (`INSERT`, `UPDATE`, `DELETE`), almacenando `usuario`, `accion`, `tabla_afectada`, `datos_anteriores`, `datos_nuevos` y `timestamp`.
+* **Cifrado de Datos en Reposo y en Tránsito:** Tránsito forzado por HTTPS/TLS 1.3 y uso de funciones criptográficas (extensión `pgcrypto`) para números de teléfono, documentos de identidad (CI/NIT) y credenciales.
+*
