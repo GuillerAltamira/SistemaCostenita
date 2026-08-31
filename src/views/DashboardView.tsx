@@ -56,7 +56,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
     }
   };
 
-  const totalStock = inventario.reduce((acc, item) => acc + Number(item.stock_actual), 0);
+  const totalStockValorizado = inventario.reduce((acc, item) => {
+    const stock = Number(item.stock_actual) || 0;
+    const precio = Number(item.producto?.precio_venta) || 0;
+    return acc + (stock * precio);
+  }, 0);
   const productosBajoStock = inventario.filter(item => Number(item.stock_actual) < 25);
   const totalComprasMonto = compras.reduce((acc, c) => acc + (Number(c.total) || 0), 0);
   const totalVentasMonto = ventas.reduce((acc, v) => acc + (Number(v.total) || 0), 0);
@@ -105,8 +109,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <StatCard
           title="Stock Total en Almacén"
-          value={`${totalStock.toLocaleString()} uds`}
-          subtitle={`${inventario.length} presentaciones activas`}
+          value={
+            totalStockValorizado > 0
+              ? `Bs. ${totalStockValorizado.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              : '0 Bs.'
+          }
+          subtitle="Valor monetario total en inventario"
           icon={<Boxes className="w-6 h-6" />}
           colorScheme="amber"
         />

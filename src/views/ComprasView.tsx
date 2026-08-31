@@ -59,8 +59,16 @@ export const ComprasView: React.FC = () => {
       setProveedores(provData);
       setProductos(prodData);
 
+      // Filtrar productos a granel para acopio de materia prima
+      const prodGranel = prodData.filter(p => {
+        const nom = p.nombre.toLowerCase();
+        const pres = p.presentacion.toLowerCase();
+        return nom.includes('granel') || nom.includes('materia prima') || pres.includes('balde') || pres.includes('granel') || pres.includes('25 kg');
+      });
+      const prodAcopioList = prodGranel.length > 0 ? prodGranel : prodData;
+
       if (provData.length > 0 && idProveedor === 0) setIdProveedor(provData[0].id_proveedor);
-      if (prodData.length > 0 && idProducto === 0) setIdProducto(prodData[0].id_producto);
+      if (prodAcopioList.length > 0 && idProducto === 0) setIdProducto(prodAcopioList[0].id_producto);
     } catch (err) {
       console.error('Error cargando datos de compras:', err);
     } finally {
@@ -69,13 +77,20 @@ export const ComprasView: React.FC = () => {
   };
 
   const handleOpenModal = () => {
+    const prodGranel = productos.filter(p => {
+      const nom = p.nombre.toLowerCase();
+      const pres = p.presentacion.toLowerCase();
+      return nom.includes('granel') || nom.includes('materia prima') || pres.includes('balde') || pres.includes('granel') || pres.includes('25 kg');
+    });
+    const prodAcopioList = prodGranel.length > 0 ? prodGranel : productos;
+
     if (proveedores.length > 0) setIdProveedor(proveedores[0].id_proveedor);
-    if (productos.length > 0) setIdProducto(productos[0].id_producto);
+    if (prodAcopioList.length > 0) setIdProducto(prodAcopioList[0].id_producto);
     setCantidad('25.00');
     setUnidadMedida('KG');
     setPrecioUnitario('28.00');
     setFecha(new Date().toISOString().split('T')[0]);
-    setObservaciones('Miel pura de monte chaqueño cosechada en floración de algarrobo');
+    setObservaciones('Acopio de miel pura a granel en bruto (materia prima en baldes herméticos)');
     setFormError(null);
     setFormSuccess(null);
     setIsModalOpen(true);
@@ -91,7 +106,7 @@ export const ComprasView: React.FC = () => {
     const precioNum = parseFloat(precioUnitario) || 0;
 
     try {
-      // Llamada a CompraController (HU04 - Registrar Compra con Afectación Automática a Inventario)
+      // Llamada a CompraController (HU04 - Registrar Compra en KG con Afectación Automática a Inventario)
       const res = await CompraController.registrarCompra(
         idProveedor,
         idProducto,
@@ -119,6 +134,14 @@ export const ComprasView: React.FC = () => {
     }
   };
 
+  // Filtrar productos para acopio a granel
+  const productosMateriaPrima = productos.filter(p => {
+    const nom = p.nombre.toLowerCase();
+    const pres = p.presentacion.toLowerCase();
+    return nom.includes('granel') || nom.includes('materia prima') || pres.includes('balde') || pres.includes('granel') || pres.includes('25 kg');
+  });
+  const productosAcopioSeleccionables = productosMateriaPrima.length > 0 ? productosMateriaPrima : productos;
+
   const selectedProduct = productos.find(p => p.id_producto === idProducto);
   const selectedProveedor = proveedores.find(p => p.id_proveedor === idProveedor);
   const cantNum = parseFloat(cantidad) || 0;
@@ -136,7 +159,7 @@ export const ComprasView: React.FC = () => {
           <div>
             <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Acopiado</p>
             <p className="text-2xl font-extrabold text-amber-400">Bs. {totalInvertido.toFixed(2)}</p>
-            <p className="text-[11px] text-slate-400">Inversión en apicultores locales</p>
+            <p className="text-[11px] text-slate-400">Inversión a apicultores locales</p>
           </div>
           <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <DollarSign className="w-5 h-5" />
@@ -146,8 +169,8 @@ export const ComprasView: React.FC = () => {
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
           <div>
             <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Materia Prima en Peso</p>
-            <p className="text-2xl font-extrabold text-emerald-400">{totalKilosAcopiados.toFixed(1)} <span className="text-sm font-semibold text-slate-300">Kg/Unid</span></p>
-            <p className="text-[11px] text-slate-400">Acopiado y envasado</p>
+            <p className="text-2xl font-extrabold text-emerald-400">{totalKilosAcopiados.toFixed(1)} <span className="text-sm font-semibold text-slate-300">KG</span></p>
+            <p className="text-[11px] text-slate-400">Acopio en bruto (Kilos)</p>
           </div>
           <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <Scale className="w-5 h-5" />
@@ -171,10 +194,10 @@ export const ComprasView: React.FC = () => {
         <div>
           <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-amber-400" />
-            Acopio y Compra de Miel de Abeja (Villa Montes)
+            Acopio y Compra de Miel a Granel / Materia Prima (Villa Montes)
           </h3>
           <p className="text-xs text-slate-400">
-            Regla de Negocio HU04: Toda compra registrada ingresa automáticamente como &apos;ENTRADA&apos; sumando al stock de inventario.
+            Regla de Negocio HU04: Adquisición de miel en bruto a apicultores (en KG). No se compran presentaciones comerciales minoristas.
           </p>
         </div>
 
@@ -202,8 +225,8 @@ export const ComprasView: React.FC = () => {
       {/* Compras Table */}
       <Card>
         <CardHeader
-          title="Historial de Compras de Materia Prima y Miel"
-          subtitle={`Total de ${compras.length} órdenes registradas y auditadas para SENASAG`}
+          title="Historial de Acopio y Compras de Miel a Granel"
+          subtitle={`Total de ${compras.length} órdenes liquidadas por peso (KG) e inalterables`}
           icon={<ShoppingCart className="w-5 h-5" />}
         />
 
@@ -214,10 +237,10 @@ export const ComprasView: React.FC = () => {
                 <th className="py-3.5 px-4">ID</th>
                 <th className="py-3.5 px-4">Fecha</th>
                 <th className="py-3.5 px-4">Apicultor / Proveedor</th>
-                <th className="py-3.5 px-4">Producto & Presentación</th>
-                <th className="py-3.5 px-4 text-right">Cantidad</th>
-                <th className="py-3.5 px-4 text-right">Precio Unitario</th>
-                <th className="py-3.5 px-4 text-right">Total (Bs.)</th>
+                <th className="py-3.5 px-4">Materia Prima & Presentación</th>
+                <th className="py-3.5 px-4 text-right">Cantidad (KG)</th>
+                <th className="py-3.5 px-4 text-right">Costo por KG (Bs.)</th>
+                <th className="py-3.5 px-4 text-right">Total Liquidado (Bs.)</th>
                 <th className="py-3.5 px-4 text-center">Estado & Kardex</th>
               </tr>
             </thead>
@@ -236,9 +259,9 @@ export const ComprasView: React.FC = () => {
                   <td colSpan={8} className="text-center py-12 text-slate-400">
                     <div className="max-w-sm mx-auto space-y-2">
                       <ShoppingCart className="w-8 h-8 text-slate-600 mx-auto" />
-                      <p className="font-semibold text-slate-300">No hay compras registradas</p>
+                      <p className="font-semibold text-slate-300">No hay compras de acopio registradas</p>
                       <p className="text-xs text-slate-500">
-                        Inicia el acopio registrando una compra de miel con el botón superior.
+                        Inicia el acopio registrando una compra de miel a granel con el botón superior.
                       </p>
                     </div>
                   </td>
@@ -270,10 +293,10 @@ export const ComprasView: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100">
-                      {c.cantidad} <span className="text-xs font-normal text-slate-400">{c.unidad_medida}</span>
+                      {c.cantidad} <span className="text-xs font-normal text-amber-400">KG</span>
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono text-slate-300">
-                      Bs. {Number(c.precio_unitario || 0).toFixed(2)}
+                      Bs. {Number(c.precio_unitario || 0).toFixed(2)} / KG
                     </td>
                     <td className="py-3.5 px-4 text-right font-mono font-extrabold text-amber-400">
                       Bs. {Number(c.total || 0).toFixed(2)}
@@ -284,7 +307,7 @@ export const ComprasView: React.FC = () => {
                           {c.estado}
                         </Badge>
                         <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-400 font-mono">
-                          <ArrowUpRight className="w-3 h-3" /> +Stock HU04
+                          <ArrowUpRight className="w-3 h-3" /> +Stock Kardex
                         </span>
                       </div>
                     </td>
@@ -296,16 +319,16 @@ export const ComprasView: React.FC = () => {
         </div>
       </Card>
 
-      {/* Modal HU04: Registrar Compra de Miel */}
+      {/* Modal HU04: Registrar Compra / Acopio de Miel */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Registrar Compra de Miel (HU04)"
-        subtitle="Acopio de materia prima con afectación automática e inmediata al stock físico de inventario"
+        title="Acopio y Compra de Miel a Granel (HU04)"
+        subtitle="Adquisición de miel en bruto a apicultores liquidadas estrictamente por peso en Kilos (KG)"
         maxWidth="lg"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Validation / Business Error Alert (Rojo) */}
+          {/* Validation / Business Error Alert */}
           {formError && (
             <Alert
               variant="error"
@@ -315,14 +338,22 @@ export const ComprasView: React.FC = () => {
             />
           )}
 
-          {/* Success Alert (Verde) */}
+          {/* Success Alert */}
           {formSuccess && (
             <Alert
               variant="success"
-              title="¡Compra Confirmada!"
+              title="¡Acopio Confirmado!"
               message={formSuccess}
             />
           )}
+
+          {/* Business Rule Notice Banner */}
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-200 flex items-center gap-2">
+            <Tag className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>Regla de Negocio:</strong> Costeñita acopia únicamente miel en bruto (materia prima a granel). No se compran presentaciones comerciales minoristas.
+            </span>
+          </div>
 
           {/* Selector de Proveedor */}
           <div>
@@ -351,22 +382,22 @@ export const ComprasView: React.FC = () => {
               ) : (
                 proveedores.map((p) => (
                   <option key={p.id_proveedor} value={p.id_proveedor}>
-                    {p.nombre} — {p.localidad} (Tel: {p.telefono})
+                    {p.nombre} — {p.localidad}
                   </option>
                 ))
               )}
             </select>
           </div>
 
-          {/* Selector de Producto y Presentación Dinámica */}
+          {/* Selector de Producto / Materia Prima A Granel */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Package className="w-3.5 h-3.5 text-amber-400" />
-                Producto o Tipo de Miel *
+                Miel a Granel / Materia Prima *
               </span>
               <span className="text-[11px] font-normal text-amber-300">
-                Presentación: {selectedProduct?.presentacion || 'Seleccione producto'}
+                {selectedProduct?.presentacion || 'Materia Prima A Granel'}
               </span>
             </label>
             <select
@@ -375,10 +406,10 @@ export const ComprasView: React.FC = () => {
               required
               className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-amber-400 transition-colors"
             >
-              {productos.length === 0 ? (
-                <option value={0}>No hay productos disponibles. Registre uno en HU01.</option>
+              {productosAcopioSeleccionables.length === 0 ? (
+                <option value={0}>No hay materias primas a granel configuradas.</option>
               ) : (
-                productos.map((pr) => (
+                productosAcopioSeleccionables.map((pr) => (
                   <option key={pr.id_producto} value={pr.id_producto}>
                     {pr.nombre} — [{pr.presentacion}]
                   </option>
@@ -387,11 +418,11 @@ export const ComprasView: React.FC = () => {
             </select>
           </div>
 
-          {/* Cantidad y Unidad de Medida (KG / GRAMOS / UNIDAD) */}
+          {/* Cantidad en KG y Unidad de Medida Estricta KG */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
-                <span>Cantidad Acopiada *</span>
+                <span>Cantidad de Kilos (KG) *</span>
                 <span className="text-[11px] font-normal text-emerald-400">&gt; 0</span>
               </label>
               <input
@@ -409,36 +440,31 @@ export const ComprasView: React.FC = () => {
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <Scale className="w-3.5 h-3.5 text-amber-400" />
-                Unidad de Medida (Peso) *
+                Unidad de Medida *
               </label>
-              <select
-                value={unidadMedida}
-                onChange={(e) => setUnidadMedida(e.target.value as UnidadMedida)}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-amber-400 transition-colors font-mono"
-              >
-                <option value="KG">KG (Kilogramos)</option>
-                <option value="GRAMOS">GRAMOS (g)</option>
-                <option value="UNIDAD">UNIDAD (Balde / Envase)</option>
-              </select>
+              <div className="w-full px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm font-bold text-amber-400 font-mono flex items-center justify-between">
+                <span>KG (Kilogramos)</span>
+                <span className="text-[11px] text-slate-400 font-normal">Exclusivo Acopio</span>
+              </div>
             </div>
           </div>
 
-          {/* Costo Unitario y Fecha */}
+          {/* Costo por KG (Bs.) y Fecha */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5 text-amber-400" />
-                Costo Unitario (Bs.) *
+                Costo por KG (Bs.) *
               </label>
               <input
                 type="number"
                 step="0.50"
                 min="0"
                 required
-                placeholder="28.00"
+                placeholder="Ej. 28.00"
                 value={precioUnitario}
                 onChange={(e) => setPrecioUnitario(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-amber-400 transition-colors"
+                className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 focus:outline-none focus:border-amber-400 transition-colors font-mono"
               />
             </div>
 
@@ -464,7 +490,7 @@ export const ComprasView: React.FC = () => {
             </label>
             <input
               type="text"
-              placeholder="Ej. Cosecha floración de algarrobo y quebracho, lote C-102"
+              placeholder="Ej. Cosecha floración de algarrobo y quebracho en baldes herméticos"
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
@@ -477,7 +503,7 @@ export const ComprasView: React.FC = () => {
             <div>
               <p className="font-bold text-emerald-200">Afectación Automática de Inventario (HU04 / HU06)</p>
               <p className="text-[11px] text-emerald-400/90 mt-0.5">
-                Al confirmar la compra de <span className="font-mono font-bold text-white">{cantNum} {unidadMedida}</span> de <span className="font-semibold text-white">&quot;{selectedProduct?.nombre || 'Producto'}&quot;</span> a <span className="font-semibold text-white">{selectedProveedor?.nombre || 'Apicultor'}</span>, el sistema creará inmediatamente un registro <span className="font-mono font-bold text-white">&apos;ENTRADA&apos;</span> en el Kardex y sumará la cantidad al inventario disponible.
+                Al confirmar la compra de <span className="font-mono font-bold text-white">{cantNum} KG</span> de <span className="font-semibold text-white">&quot;{selectedProduct?.nombre || 'Materia Prima'}&quot;</span> a <span className="font-semibold text-white">{selectedProveedor?.nombre || 'Apicultor'}</span>, el sistema creará inmediatamente un registro <span className="font-mono font-bold text-white">&apos;ENTRADA&apos;</span> en el Kardex y sumará el peso al inventario disponible.
               </p>
             </div>
           </div>
@@ -485,9 +511,9 @@ export const ComprasView: React.FC = () => {
           {/* Total Preview */}
           <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between">
             <div>
-              <span className="text-xs font-semibold text-slate-300 block">Total a Liquidar al Apicultor:</span>
+              <span className="text-xs font-semibold text-slate-300 block">Total a Liquidar al Apicultor (Bs.):</span>
               <span className="text-[11px] text-slate-400">
-                {cantNum} {unidadMedida} × Bs. {precioNum.toFixed(2)}
+                Fórmula: {cantNum} KG × Bs. {precioNum.toFixed(2)} / KG
               </span>
             </div>
             <span className="text-xl font-extrabold text-amber-400 font-mono">
@@ -510,7 +536,7 @@ export const ComprasView: React.FC = () => {
               variant="primary"
               isLoading={isSubmitting}
             >
-              Confirmar Compra y Afectar Inventario
+              Confirmar Acopio y Afectar Inventario
             </Button>
           </div>
         </form>

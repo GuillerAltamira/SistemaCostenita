@@ -26,11 +26,11 @@ export class CompraController {
     if (!fecha) {
       return { valid: false, error: 'La fecha de compra es obligatoria.' };
     }
-    const unidadesValidas: UnidadMedida[] = ['GRAMOS', 'KG', 'UNIDAD'];
+    const unidadesValidas: UnidadMedida[] = ['KG', 'GRAMOS', 'UNIDAD'];
     if (!unidadMedida || !unidadesValidas.includes(unidadMedida as UnidadMedida)) {
       return {
         valid: false,
-        error: 'Unidad de medida no permitida. Solo se permite GRAMOS, KG o UNIDAD (la miel se gestiona por peso).'
+        error: 'Unidad de medida no permitida. El acopio de materia prima a granel debe realizarse en KG (Kilogramos).'
       };
     }
     return { valid: true };
