@@ -1,4 +1,4 @@
-import { ventaService } from '../services/ventaService';
+import { ventaService, extraerPesoNominalKg } from '../services/ventaService';
 import { productoService } from '../services/productoService';
 import { inventarioService } from '../services/inventarioService';
 import { Venta, OperationResult } from '../types/models';
@@ -29,7 +29,7 @@ export class VentaController {
   }
 
   /**
-   * HU09: Registra la venta y realiza el descargo del inventario con validación de stock
+   * HU09: Registra la venta, valida stock de producto envasado Y valida stock de materia prima en bruto
    */
   static async registrarVenta(
     cliente: string,
@@ -59,14 +59,36 @@ export class VentaController {
       };
     }
 
-    // 3. Verificar stock antes de vender
+    // 3. Verificar stock de producto envasado antes de vender
     const stockDisponible = await inventarioService.consultarStock(idProducto);
     if (stockDisponible < cantidad) {
       return {
         success: false,
-        message: 'Stock insuficiente para concretar la venta.',
-        error: `Stock actual: ${stockDisponible} unidades. Cantidad solicitada: ${cantidad}.`
+        message: 'Stock de producto envasado insuficiente.',
+        error: `Solo hay ${stockDisponible} unidades de ${prod.nombre} (${prod.presentacion}) disponibles. Cantidad solicitada: ${cantidad}.`
       };
+    }
+
+    // 4. Verificar stock de Materia Prima Bruta (en KG)
+    const prodMateriaPrima = productos.find(p => {
+      const nom = p.nombre.toLowerCase();
+      const pres = p.presentacion.toLowerCase();
+      return nom.includes('granel') || nom.includes('materia prima') || pres.includes('balde') || pres.includes('25 kg') || pres.includes('granel');
+    }) || productos.find(p => p.id_producto === 5);
+
+    const esMateriaPrimaDirecta = prodMateriaPrima && prod.id_producto === prodMateriaPrima.id_producto;
+    if (!esMateriaPrimaDirecta && prodMateriaPrima) {
+      const pesoNominalUnitarioKg = extraerPesoNominalKg(prod.presentacion);
+      const pesoTotalKg = pesoNominalUnitarioKg * cantidad;
+      const stockMateriaPrimaKg = await inventarioService.consultarStock(prodMateriaPrima.id_producto);
+
+      if (stockMateriaPrimaKg < pesoTotalKg) {
+        return {
+          success: false,
+          message: 'Stock de Materia Prima en Bruto insuficiente.',
+          error: `Se requieren ${pesoTotalKg.toFixed(2)} KG de Miel en Bruto para envasar/cubrir ${cantidad} unid. de ${prod.nombre} (${prod.presentacion}), pero solo hay ${stockMateriaPrimaKg.toFixed(2)} KG disponibles en almacén.`
+        };
+      }
     }
 
     // 4. Guardar venta
