@@ -39,7 +39,7 @@ Este proyecto se encuentra alineado con los Objetivos de Desarrollo Sostenible (
 * **Ronny Guillermo Altamirano Suarez** — *Universidad Privada Domingo Savio (UPDS - Sede Tarija)*
 * **Miguel Angel Lopez Villca** — *Universidad Privada Domingo Savio (UPDS - Sede Tarija)*
 * **Docente Guía:** Ing. Nelson Huanca
-* **Materia:** Sistemas de Información I
+* **Materia:** Sistemas de Información I.
 *
 ## Diagrama de Base de Datos
 
