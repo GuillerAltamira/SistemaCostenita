@@ -186,7 +186,8 @@ export const inventarioService = {
     idProducto: number,
     cantidad: number,
     fecha: string = new Date().toISOString().split('T')[0],
-    motivo: string = 'Salida de producto'
+    motivo: string = 'Salida de producto',
+    unidadMedida: UnidadMedida = 'UNIDAD'
   ): Promise<{ stockNuevo: number; movimiento: MovimientoInventario }> {
     if (cantidad <= 0) {
       throw new Error('La cantidad de salida debe ser estrictamente mayor a 0');
@@ -206,6 +207,7 @@ export const inventarioService = {
           id_producto: idProducto,
           tipo: 'SALIDA',
           cantidad,
+          unidad_medida: unidadMedida,
           fecha,
           motivo
         }])
@@ -236,6 +238,7 @@ export const inventarioService = {
       id_producto: idProducto,
       tipo: 'SALIDA',
       cantidad,
+      unidad_medida: unidadMedida,
       fecha,
       motivo,
       created_at: new Date().toISOString()

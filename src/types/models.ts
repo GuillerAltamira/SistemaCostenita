@@ -111,12 +111,22 @@ export interface MovimientoInventario {
 }
 
 /**
+ * Canales de venta permitidos para la comercialización apícola (HU11)
+ */
+export type CanalVenta =
+  | 'Venta Mostrador'
+  | 'WhatsApp / Pedido Local'
+  | 'Feria Local / Mercado'
+  | 'Distribuidor / Tienda';
+
+/**
  * Entidad VENTA (Comercialización)
  */
 export interface Venta {
   id_venta: number;
   fecha: string;
   cliente: string;
+  canal?: CanalVenta | string;
   id_producto: number;
   cantidad: number;
   precio_unitario: number;

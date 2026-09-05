@@ -64,7 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       key: 'compras',
       label: 'Compras (Miel)',
-      huCode: 'HU04',
+      huCode: 'HU04/13',
       icon: <ShoppingCart className="w-5 h-5" />
     },
     {
@@ -76,12 +76,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       key: 'ventas',
       label: 'Ventas',
-      huCode: 'HU09',
+      huCode: 'HU09-12',
       icon: <BadgeDollarSign className="w-5 h-5" />
     },
     {
       key: 'reportes',
       label: 'Reportes & Ley',
+      huCode: 'HU14',
       icon: <BarChart3 className="w-5 h-5" />
     }
   ];

@@ -60,3 +60,62 @@
 .animate-scale-up {
   animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ==========================================================================
+   ESTILOS DE IMPRESIÓN Y EXPORTACIÓN PDF (HU14 - DEMO DAY / SENASAG)
+   ========================================================================== */
+@media print {
+  /* Ocultar elementos interactivos de navegación y acciones de pantalla */
+  aside,
+  header,
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Resetear dimensiones para hoja de papel estándar (Carta / A4) */
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 11pt !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Ajustar contenedor principal */
+  .lg\:pl-72 {
+    padding-left: 0 !important;
+  }
+
+  main {
+    max-width: 100% !important;
+    padding: 10mm 15mm !important;
+    margin: 0 !important;
+  }
+
+  /* Adaptar tarjetas oscuras a modo impresión limpio */
+  .print-clean {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+    box-shadow: none !important;
+  }
+
+  /* Evitar cortes abruptos en medio de tablas o tarjetas */
+  .print-avoid-break {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Mostrar sección oficial solo en impresión */
+  .print-only {
+    display: block !important;
+  }
+}
+
+@media screen {
+  .print-only {
+    display: none !important;
+  }
+}

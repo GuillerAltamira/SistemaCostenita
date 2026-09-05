@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   ShoppingCart,
   Plus,
   Calendar,
-  User,
-  Package,
   DollarSign,
   Scale,
   RefreshCw,
   ArrowUpRight,
   ShieldCheck,
-  Tag
+  Tag,
+  Search,
+  Filter,
+  RotateCcw,
+  Sprout,
+  User,
+  Package
 } from 'lucide-react';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -42,6 +46,12 @@ export const ComprasView: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Filters State (HU13 - Historial y Auditoría de Compras / Acopio)
+  const [busquedaApicultor, setBusquedaApicultor] = useState<string>('');
+  const [fechaDesde, setFechaDesde] = useState<string>('');
+  const [fechaHasta, setFechaHasta] = useState<string>('');
+  const [filtroEstado, setFiltroEstado] = useState<string>('TODOS');
 
   useEffect(() => {
     cargarDatos();
@@ -148,8 +158,37 @@ export const ComprasView: React.FC = () => {
   const precioNum = parseFloat(precioUnitario) || 0;
   const totalCalculado = cantNum * precioNum;
 
-  const totalInvertido = compras.reduce((acc, c) => acc + (Number(c.total) || 0), 0);
-  const totalKilosAcopiados = compras.reduce((acc, c) => acc + (Number(c.cantidad) || 0), 0);
+  const comprasFiltradas = useMemo(() => {
+    return compras.filter((c) => {
+      const q = busquedaApicultor.toLowerCase().trim();
+      const nomProv = c.proveedor?.nombre?.toLowerCase() || '';
+      const locProv = c.proveedor?.localidad?.toLowerCase() || '';
+      const coincideApicultor = !q || nomProv.includes(q) || locProv.includes(q);
+
+      const coincideDesde = !fechaDesde || c.fecha >= fechaDesde;
+      const coincideHasta = !fechaHasta || c.fecha <= fechaHasta;
+      const coincideEstado = filtroEstado === 'TODOS' || c.estado === filtroEstado;
+
+      return coincideApicultor && coincideDesde && coincideHasta && coincideEstado;
+    });
+  }, [compras, busquedaApicultor, fechaDesde, fechaHasta, filtroEstado]);
+
+  const totalInvertido = useMemo(() => {
+    return comprasFiltradas.reduce((acc, c) => acc + (Number(c.total) || 0), 0);
+  }, [comprasFiltradas]);
+
+  const totalKilosAcopiados = useMemo(() => {
+    return comprasFiltradas.reduce((acc, c) => acc + (Number(c.cantidad) || 0), 0);
+  }, [comprasFiltradas]);
+
+  const hayFiltrosActivos = Boolean(busquedaApicultor || fechaDesde || fechaHasta || filtroEstado !== 'TODOS');
+
+  const handleResetFiltros = () => {
+    setBusquedaApicultor('');
+    setFechaDesde('');
+    setFechaHasta('');
+    setFiltroEstado('TODOS');
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -158,8 +197,12 @@ export const ComprasView: React.FC = () => {
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
           <div>
             <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total Acopiado</p>
-            <p className="text-2xl font-extrabold text-amber-400">Bs. {totalInvertido.toFixed(2)}</p>
-            <p className="text-[11px] text-slate-400">Inversión a apicultores locales</p>
+            <p className="text-2xl font-extrabold text-amber-400">
+              Bs. {totalInvertido.toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </p>
+            <p className="text-[11px] text-slate-400">
+              {hayFiltrosActivos ? 'En compras filtradas' : 'Inversión a apicultores locales'}
+            </p>
           </div>
           <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
             <DollarSign className="w-5 h-5" />
@@ -169,8 +212,10 @@ export const ComprasView: React.FC = () => {
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
           <div>
             <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Materia Prima en Peso</p>
-            <p className="text-2xl font-extrabold text-emerald-400">{totalKilosAcopiados.toFixed(1)} <span className="text-sm font-semibold text-slate-300">KG</span></p>
-            <p className="text-[11px] text-slate-400">Acopio en bruto (Kilos)</p>
+            <p className="text-2xl font-extrabold text-emerald-400">
+              {totalKilosAcopiados.toFixed(1)} <span className="text-sm font-semibold text-slate-300">KG</span>
+            </p>
+            <p className="text-[11px] text-slate-400">Miel en bruto ingresada al almacén</p>
           </div>
           <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <Scale className="w-5 h-5" />
@@ -179,8 +224,11 @@ export const ComprasView: React.FC = () => {
 
         <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
           <div>
-            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Órdenes de Compra</p>
-            <p className="text-2xl font-extrabold text-sky-400">{compras.length}</p>
+            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Órdenes de Acopio</p>
+            <p className="text-2xl font-extrabold text-sky-400 font-mono">
+              {comprasFiltradas.length}{' '}
+              <span className="text-xs font-normal text-slate-400">/ {compras.length} tot.</span>
+            </p>
             <p className="text-[11px] text-slate-400">Con entrada automática al Kardex</p>
           </div>
           <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
@@ -197,7 +245,7 @@ export const ComprasView: React.FC = () => {
             Acopio y Compra de Miel a Granel / Materia Prima (Villa Montes)
           </h3>
           <p className="text-xs text-slate-400">
-            Regla de Negocio HU04: Adquisición de miel en bruto a apicultores (en KG). No se compran presentaciones comerciales minoristas.
+            Reglas de Negocio HU04 y HU13: Adquisición de miel en bruto a apicultores (en KG) con auditoría inalterable y trazabilidad floral (SENASAG).
           </p>
         </div>
 
@@ -222,52 +270,131 @@ export const ComprasView: React.FC = () => {
         </div>
       </div>
 
-      {/* Compras Table */}
+      {/* Compras Table & Audit History (HU13) */}
       <Card>
         <CardHeader
-          title="Historial de Acopio y Compras de Miel a Granel"
-          subtitle={`Total de ${compras.length} órdenes liquidadas por peso (KG) e inalterables`}
-          icon={<ShoppingCart className="w-5 h-5" />}
+          title="Historial y Auditoría de Compras / Acopio (HU13)"
+          subtitle={`Total de ${comprasFiltradas.length} compras auditadas — Trazabilidad floral y normativa ASFI`}
+          icon={<ShoppingCart className="w-5 h-5 text-amber-400" />}
         />
+
+        {/* Barra de Filtros y Búsqueda HU13 */}
+        <div className="p-4 border-b border-slate-800 bg-slate-850/40 flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          {/* Buscador Rápido por Nombre de Apicultor o Localidad */}
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={busquedaApicultor}
+              onChange={(e) => setBusquedaApicultor(e.target.value)}
+              placeholder="Buscar por apicultor o comunidad (ej. Don Mateo, Ibibobo)..."
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-400 transition-colors"
+            />
+            {busquedaApicultor && (
+              <button
+                type="button"
+                onClick={() => setBusquedaApicultor('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Filtros por Rango de Fechas y Estado */}
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs">
+              <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[11px] text-slate-400">Desde:</span>
+              <input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                className="bg-transparent text-slate-100 text-xs font-mono focus:outline-none cursor-pointer"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-700 text-xs">
+              <Calendar className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="text-[11px] text-slate-400">Hasta:</span>
+              <input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                className="bg-transparent text-slate-100 text-xs font-mono focus:outline-none cursor-pointer"
+              />
+            </div>
+
+            {/* Filtro por Estado */}
+            <div className="relative">
+              <Filter className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={filtroEstado}
+                onChange={(e) => setFiltroEstado(e.target.value)}
+                className="pl-8 pr-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-amber-400 transition-colors cursor-pointer"
+              >
+                <option value="TODOS">Todos los Estados</option>
+                <option value="REGISTRADA">REGISTRADA</option>
+                <option value="ANULADA">ANULADA</option>
+              </select>
+            </div>
+
+            {hayFiltrosActivos && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFiltros}
+                leftIcon={<RotateCcw className="w-3 h-3" />}
+                className="text-xs text-slate-300"
+              >
+                Limpiar
+              </Button>
+            )}
+          </div>
+        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-700/80 text-xs uppercase font-bold text-slate-400 bg-slate-850/60">
-                <th className="py-3.5 px-4">ID</th>
-                <th className="py-3.5 px-4">Fecha</th>
+                <th className="py-3.5 px-4 font-mono">ID</th>
+                <th className="py-3.5 px-4">Fecha de Compra</th>
                 <th className="py-3.5 px-4">Apicultor / Proveedor</th>
-                <th className="py-3.5 px-4">Materia Prima & Presentación</th>
-                <th className="py-3.5 px-4 text-right">Cantidad (KG)</th>
-                <th className="py-3.5 px-4 text-right">Costo por KG (Bs.)</th>
-                <th className="py-3.5 px-4 text-right">Total Liquidado (Bs.)</th>
-                <th className="py-3.5 px-4 text-center">Estado & Kardex</th>
+                <th className="py-3.5 px-4">Tipo de Miel / Materia Prima</th>
+                <th className="py-3.5 px-4 text-right">Cantidad en Peso (KG)</th>
+                <th className="py-3.5 px-4 text-right">Costo por KG</th>
+                <th className="py-3.5 px-4 text-right">Total Liquidado</th>
+                <th className="py-3.5 px-4">Trazabilidad Floral / Observaciones</th>
+                <th className="py-3.5 px-4 text-center">Estado</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-400">
+                  <td colSpan={9} className="text-center py-12 text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <RefreshCw className="w-6 h-6 animate-spin text-amber-400" />
-                      <p className="text-xs">Consultando compras de materia prima...</p>
+                      <p className="text-xs">Consultando compras de materia prima auditadas...</p>
                     </div>
                   </td>
                 </tr>
-              ) : compras.length === 0 ? (
+              ) : comprasFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="text-center py-12 text-slate-400">
+                  <td colSpan={9} className="text-center py-12 text-slate-400">
                     <div className="max-w-sm mx-auto space-y-2">
                       <ShoppingCart className="w-8 h-8 text-slate-600 mx-auto" />
-                      <p className="font-semibold text-slate-300">No hay compras de acopio registradas</p>
+                      <p className="font-semibold text-slate-300">No hay compras de acopio que coincidan</p>
                       <p className="text-xs text-slate-500">
-                        Inicia el acopio registrando una compra de miel a granel con el botón superior.
+                        {hayFiltrosActivos
+                          ? 'Prueba modificando o limpiando los filtros de búsqueda o rango de fechas.'
+                          : 'Inicia el acopio registrando una compra de miel a granel con el botón superior.'}
                       </p>
                     </div>
                   </td>
                 </tr>
               ) : (
-                compras.map((c) => (
+                comprasFiltradas.map((c) => (
                   <tr key={c.id_compra} className="hover:bg-slate-800/50 transition-colors group">
                     <td className="py-3.5 px-4 font-mono text-xs text-slate-400">
                       #{c.id_compra}
@@ -292,23 +419,37 @@ export const ComprasView: React.FC = () => {
                         {c.producto?.presentacion || c.unidad_medida}
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100">
-                      {c.cantidad} <span className="text-xs font-normal text-amber-400">KG</span>
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-100 whitespace-nowrap">
+                      {Number(c.cantidad).toFixed(2)} <span className="text-xs font-normal text-amber-400">KG</span>
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono text-slate-300">
-                      Bs. {Number(c.precio_unitario || 0).toFixed(2)} / KG
+                    <td className="py-3.5 px-4 text-right font-mono text-slate-300 whitespace-nowrap">
+                      Bs. {Number(c.precio_unitario || 0).toFixed(2)}
                     </td>
-                    <td className="py-3.5 px-4 text-right font-mono font-extrabold text-amber-400">
-                      Bs. {Number(c.total || 0).toFixed(2)}
+                    <td className="py-3.5 px-4 text-right font-mono font-extrabold text-amber-400 whitespace-nowrap">
+                      Bs. {Number(c.total || 0).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="py-3.5 px-4 text-center">
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-start gap-1.5 max-w-xs text-xs text-slate-300">
+                        <Sprout className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="line-clamp-2" title={c.observaciones || 'Acopio estándar de miel pura'}>
+                          {c.observaciones || 'Acopio estándar de miel pura de monte'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
                       <div className="flex flex-col items-center gap-1">
-                        <Badge variant="success" size="sm" dot>
+                        <Badge
+                          variant={c.estado === 'REGISTRADA' ? 'success' : 'danger'}
+                          size="sm"
+                          dot
+                        >
                           {c.estado}
                         </Badge>
-                        <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-400 font-mono">
-                          <ArrowUpRight className="w-3 h-3" /> +Stock Kardex
-                        </span>
+                        {c.estado === 'REGISTRADA' && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-400 font-mono">
+                            <ArrowUpRight className="w-3 h-3" /> +Stock Kardex
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>

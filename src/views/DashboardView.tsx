@@ -34,6 +34,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onNavigate }) => {
 
   useEffect(() => {
     loadDashboardData();
+
+    const handleInventoryUpdated = () => {
+      loadDashboardData();
+    };
+
+    window.addEventListener('costenita:inventory-updated', handleInventoryUpdated);
+    return () => {
+      window.removeEventListener('costenita:inventory-updated', handleInventoryUpdated);
+    };
   }, []);
 
   const loadDashboardData = async () => {

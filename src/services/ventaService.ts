@@ -1,5 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient';
-import { Venta } from '../types/models';
+import { Venta, Producto, CanalVenta } from '../types/models';
 import { INITIAL_VENTAS } from './mockData';
 import { productoService } from './productoService';
 import { inventarioService } from './inventarioService';
@@ -48,9 +48,93 @@ export function extraerPesoNominalKg(presentacion: string): number {
   return 1.0; // Valor nominal por defecto
 }
 
+/**
+ * HU09 - Paso B: Calcula el peso total equivalente en KG consumido:
+ * - Si la presentación es "1 kg" -> peso_kg = cantidad * 1.00
+ * - Si es "500 g" -> peso_kg = cantidad * 0.50
+ * - Si es "250 g" -> peso_kg = cantidad * 0.25
+ */
+export function calcularPesoEquivalenteKg(presentacion: string, cantidad: number): number {
+  if (!presentacion || cantidad <= 0) return 0;
+  const pres = presentacion.toLowerCase();
+
+  if (pres.includes('1 kg') || pres.includes('1kg')) {
+    return Number((cantidad * 1.00).toFixed(3));
+  }
+  if (pres.includes('500 g') || pres.includes('500g')) {
+    return Number((cantidad * 0.50).toFixed(3));
+  }
+  if (pres.includes('250 g') || pres.includes('250g')) {
+    return Number((cantidad * 0.25).toFixed(3));
+  }
+
+  const pesoUnit = extraerPesoNominalKg(presentacion);
+  return Number((cantidad * pesoUnit).toFixed(3));
+}
+
+/**
+ * HU09: Filtra exclusivamente productos comerciales terminados (envasados),
+ * excluyendo materia prima a granel en baldes o recipientes de acopio.
+ */
+export function esProductoComercial(p: Producto): boolean {
+  if (p.estado !== 'ACTIVO') return false;
+  const nom = p.nombre.toLowerCase();
+  const pres = p.presentacion.toLowerCase();
+  const esGranel =
+    nom.includes('granel') ||
+    nom.includes('materia prima') ||
+    nom.includes('bruto') ||
+    pres.includes('balde') ||
+    pres.includes('granel') ||
+    pres.includes('25 kg');
+  return !esGranel;
+}
+
+/**
+ * Localiza el producto correspondiente a la materia prima en bruto (miel a granel acopiada).
+ */
+export function encontrarMateriaPrimaBruta(productos: Producto[]): Producto | undefined {
+  return (
+    productos.find(p => {
+      const nom = p.nombre.toLowerCase();
+      const pres = p.presentacion.toLowerCase();
+      return (
+        nom.includes('materia prima') ||
+        nom.includes('bruto') ||
+        nom.includes('granel') ||
+        pres.includes('balde') ||
+        pres.includes('granel') ||
+        pres.includes('25 kg')
+      );
+    }) || productos.find(p => p.id_producto === 4 || p.id_producto === 5)
+  );
+}
+
+/**
+ * HU11 / HU12: Desglosa el cliente y el canal de venta a partir del formato "Cliente - [Canal]".
+ * Si no incluye canal, asigna 'Venta Mostrador' por defecto.
+ */
+export function desglosarClienteYCanal(clienteCompleto: string): { nombreCliente: string; canal: CanalVenta } {
+  if (!clienteCompleto) return { nombreCliente: 'Cliente Mostrador', canal: 'Venta Mostrador' };
+
+  const match = clienteCompleto.match(/^(.*?)(?:\s*-\s*\[(.*?)\])?$/);
+  if (match && match[2]) {
+    const canalParsed = match[2].trim() as CanalVenta;
+    return {
+      nombreCliente: match[1].trim() || 'Cliente Mostrador',
+      canal: canalParsed || 'Venta Mostrador'
+    };
+  }
+
+  return {
+    nombreCliente: clienteCompleto.trim() || 'Cliente Mostrador',
+    canal: 'Venta Mostrador'
+  };
+}
+
 export const ventaService = {
   /**
-   * Obtiene el listado de ventas realizadas
+   * HU12: Obtiene el listado de ventas realizadas con productos y canales desglosados
    */
   async obtenerVentas(): Promise<Venta[]> {
     const productos = await productoService.obtenerProductos();
@@ -62,104 +146,171 @@ export const ventaService = {
         .order('id_venta', { ascending: false });
 
       if (!error && data) {
-        return (data as Venta[]).map(v => ({
-          ...v,
-          producto: productos.find(p => p.id_producto === v.id_producto)
-        }));
+        return (data as Venta[]).map(v => {
+          const { nombreCliente, canal } = desglosarClienteYCanal(v.cliente);
+          return {
+            ...v,
+            cliente: nombreCliente,
+            canal,
+            producto: productos.find(p => p.id_producto === v.id_producto)
+          };
+        });
       }
     }
 
     const localVentas = getLocalVentas();
-    return localVentas.map(v => ({
-      ...v,
-      producto: productos.find(p => p.id_producto === v.id_producto)
-    }));
+    return localVentas.map(v => {
+      const { nombreCliente, canal } = desglosarClienteYCanal(v.cliente);
+      return {
+        ...v,
+        cliente: nombreCliente,
+        canal: (v.canal as CanalVenta) || canal,
+        producto: productos.find(p => p.id_producto === v.id_producto)
+      };
+    });
   },
 
   /**
-   * HU09: Registra una venta, descuenta el stock del producto envasado Y realiza el
-   * descuento cruzado automático del peso en KG de Miel en Bruto (Materia Prima).
+   * HU09, HU10, HU11: Registra una venta comercial con lógica de descuento cruzado:
+   * - Paso A: Validar stock de unidades envasadas en tabla `inventario`.
+   * - Paso B: Calcular peso equivalente en KG consumido (1 kg -> 1.00, 500 g -> 0.50, 250 g -> 0.25).
+   * - Paso C: Validar stock de miel bruta acopiada >= peso_kg. Si no, abortar con:
+   *           "Stock insuficiente de miel bruta acopiada para cubrir el lote vendido".
+   * - Paso D: Insertar en `venta`, salidas en `movimiento_inventario` y actualizar `inventario`.
    */
   async registrarVenta(venta: Omit<Venta, 'id_venta'>): Promise<Venta> {
     if (venta.cantidad <= 0) {
-      throw new Error('La cantidad vendida debe ser strictly mayor a 0');
+      throw new Error('La cantidad a vender debe ser mayor a 0 unidades.');
     }
 
-    // 1. Obtener productos y determinar producto vendido y materia prima bruta
+    // 1. Obtener catálogo y validar producto terminado envasado
     const productos = await productoService.obtenerProductos();
     const prodVendido = productos.find(p => p.id_producto === venta.id_producto);
     if (!prodVendido) {
       throw new Error(`Producto con ID ${venta.id_producto} no encontrado.`);
     }
 
-    const prodMateriaPrima = productos.find(p => {
-      const nom = p.nombre.toLowerCase();
-      const pres = p.presentacion.toLowerCase();
-      return nom.includes('granel') || nom.includes('materia prima') || pres.includes('balde') || pres.includes('25 kg') || pres.includes('granel');
-    }) || productos.find(p => p.id_producto === 5);
-
-    const esMateriaPrimaDirecta = prodMateriaPrima && prodVendido.id_producto === prodMateriaPrima.id_producto;
-    const pesoNominalUnitarioKg = extraerPesoNominalKg(prodVendido.presentacion);
-    const pesoTotalMateriaPrimaKg = pesoNominalUnitarioKg * venta.cantidad;
-
-    // 2. Validar stock disponible de materia prima bruta si no es la venta directa de granel
-    if (!esMateriaPrimaDirecta && prodMateriaPrima) {
-      const stockMateriaPrima = await inventarioService.consultarStock(prodMateriaPrima.id_producto);
-      if (stockMateriaPrima < pesoTotalMateriaPrimaKg) {
-        throw new Error(
-          `Stock de Materia Prima en Bruto insuficiente: Se requieren ${pesoTotalMateriaPrimaKg.toFixed(2)} KG de Miel en Bruto para cubrir ${venta.cantidad} unid. de ${prodVendido.nombre} (${prodVendido.presentacion}), pero solo hay ${stockMateriaPrima.toFixed(2)} KG disponibles en almacén.`
-        );
-      }
+    if (!esProductoComercial(prodVendido)) {
+      throw new Error(
+        'El producto seleccionado corresponde a materia prima a granel. Solo se permite comercializar productos terminados envasados (HU09).'
+      );
     }
 
-    // 3. Descontar stock del producto envasado vendido
+    // Paso A: Validar que existan suficientes unidades en inventario para el producto envasado
+    const stockEnvasado = await inventarioService.consultarStock(venta.id_producto);
+    if (stockEnvasado < venta.cantidad) {
+      throw new Error(
+        `Stock insuficiente de producto envasado: Se solicitaron ${venta.cantidad} unidades de ${prodVendido.nombre} (${prodVendido.presentacion}), pero solo hay ${stockEnvasado} unidades disponibles.`
+      );
+    }
+
+    // Paso B: Calcular el peso total equivalente en KG consumido
+    const pesoTotalKg = calcularPesoEquivalenteKg(prodVendido.presentacion, venta.cantidad);
+
+    // Paso C: Validar stock del producto de materia prima bruta (miel a granel acopiada)
+    const prodMateriaPrima = encontrarMateriaPrimaBruta(productos);
+    if (!prodMateriaPrima) {
+      throw new Error('No se encontró el ítem de Materia Prima / Miel en Bruto en el catálogo para el descuento cruzado.');
+    }
+
+    const stockMateriaPrima = await inventarioService.consultarStock(prodMateriaPrima.id_producto);
+    if (stockMateriaPrima < pesoTotalKg) {
+      throw new Error('Stock insuficiente de miel bruta acopiada para cubrir el lote vendido');
+    }
+
+    // Paso D: Ejecutar las inserciones y actualizaciones
+    const canalVenta: CanalVenta = (venta.canal as CanalVenta) || 'Venta Mostrador';
+    const clienteLimpio = (venta.cliente || 'Cliente Mostrador').trim();
+    // Guardar en formato compatible: "Cliente - [Canal]"
+    const clienteRegistro = `${clienteLimpio} - [${canalVenta}]`;
+
+    // D.2: Insertar salida en movimiento_inventario para el producto envasado
     await inventarioService.registrarSalida(
       venta.id_producto,
       venta.cantidad,
       venta.fecha,
-      `Venta comercial a ${venta.cliente || 'Cliente'}`
+      'Venta comercial',
+      'UNIDAD'
     );
 
-    // 4. Descuento cruzado de la Materia Prima Bruta (Kardex en KG) si corresponde
-    if (!esMateriaPrimaDirecta && prodMateriaPrima) {
-      await inventarioService.registrarSalida(
-        prodMateriaPrima.id_producto,
-        pesoTotalMateriaPrimaKg,
-        venta.fecha,
-        `Consumo de materia prima por venta de ${venta.cantidad} unid. de ${prodVendido.nombre} (${prodVendido.presentacion})`
-      );
-    }
+    // D.3: Insertar salida en movimiento_inventario para la miel en bruto (deducción cruzada)
+    await inventarioService.registrarSalida(
+      prodMateriaPrima.id_producto,
+      pesoTotalKg,
+      venta.fecha,
+      'Deducción por venta envasada',
+      'KG'
+    );
 
-    // 5. Insertar la venta en Supabase o modo local
+    // D.4: Actualizar stock_actual en tabla inventario
+    // (En Supabase, el trigger fn_actualizar_stock_movimiento ejecuta el UPDATE automáticamente)
+    // Para entornos locales, inventarioService.registrarSalida ya actualizó el estado.
+    // También verificamos para garantizar sincronización en ambos ítems
+    await inventarioService.consultarStock(venta.id_producto);
+    await inventarioService.consultarStock(prodMateriaPrima.id_producto);
+
+    let ventaGuardada: Venta;
+
+    // D.1: Insertar en tabla venta (Supabase o Local)
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await (supabase
         .from('venta') as any)
         .insert([{
           fecha: venta.fecha,
-          cliente: venta.cliente.trim(),
+          cliente: clienteRegistro,
           id_producto: venta.id_producto,
           cantidad: venta.cantidad,
           precio_unitario: venta.precio_unitario,
           total: venta.total || venta.cantidad * venta.precio_unitario,
-          estado: venta.estado || 'COMPLETADA'
+          estado: 'COMPLETADA'
         }])
         .select()
         .single();
 
-      if (error) throw new Error(error.message);
-      return data as Venta;
+      if (error) {
+        throw new Error(`Error al registrar la venta en la base de datos: ${error.message}`);
+      }
+
+      ventaGuardada = {
+        ...(data as Venta),
+        cliente: clienteLimpio,
+        canal: canalVenta,
+        producto: prodVendido
+      };
+    } else {
+      const ventas = getLocalVentas();
+      const nextId = ventas.length > 0 ? Math.max(...ventas.map(v => v.id_venta)) + 1 : 1;
+      ventaGuardada = {
+        ...venta,
+        id_venta: nextId,
+        cliente: clienteLimpio,
+        canal: canalVenta,
+        total: venta.total || venta.cantidad * venta.precio_unitario,
+        estado: 'COMPLETADA',
+        created_at: new Date().toISOString(),
+        producto: prodVendido
+      };
+      ventas.unshift({
+        ...ventaGuardada,
+        cliente: clienteRegistro
+      });
+      saveLocalVentas(ventas);
     }
 
-    const ventas = getLocalVentas();
-    const nextId = ventas.length > 0 ? Math.max(...ventas.map(v => v.id_venta)) + 1 : 1;
-    const nuevaVenta: Venta = {
-      ...venta,
-      id_venta: nextId,
-      created_at: new Date().toISOString()
-    };
-    ventas.unshift(nuevaVenta);
-    saveLocalVentas(ventas);
+    // Notificar reactivamente a la aplicación y al Dashboard (HU12 & Reactividad)
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('costenita:inventory-updated', {
+          detail: {
+            id_venta: ventaGuardada.id_venta,
+            id_producto: venta.id_producto,
+            id_materia_prima: prodMateriaPrima.id_producto,
+            peso_deducido_kg: pesoTotalKg
+          }
+        })
+      );
+    }
 
-    return nuevaVenta;
+    return ventaGuardada;
   }
 };
